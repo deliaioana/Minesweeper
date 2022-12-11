@@ -9,6 +9,7 @@ size = {'easy': (300, 300, 0, 8, 10), 'medium': (400, 400, 1, 15, 40), 'hard': (
 canvas = Canvas(window)
 in_game = False
 bombs = []
+matrix_states = []
 
 
 def get_square_from_coords(x, y):
@@ -29,12 +30,42 @@ def click_on_canvas(event):
 
 
 def start_round(square_coords):
+    init_matrix_state()
     generate_bombs(square_coords)
     clear_terrain(square_coords)
 
 
-def clear_terrain(square_coords):
+def init_matrix_state():
+    global matrix_states
+    matrix_states = []
+    board_size = size[current_difficulty][3]
+
+    for i in range(board_size):
+        row_states = []
+        for j in range(board_size):
+            row_states.append(0)
+        matrix_states.extend(row_states)
+
+
+def get_new_safe_neighbours(q, current_coords):
+    return []
+
+
+def clear_squares(list_of_squares):
     pass
+
+
+def clear_terrain(square_coords):
+    q = [square_coords]
+    index = 0
+
+    while len(q) > 0:
+        current_coords = q[index]
+        neighbors = get_new_safe_neighbours(q, current_coords)
+        q.extend(neighbors)
+        index += 1
+
+    clear_squares(q)
 
 
 def generate_bombs(square_coords):
@@ -96,7 +127,8 @@ def update_board():
 
 
 def update_difficulty(difficulty, difficulty_label):
-    global current_difficulty
+    global current_difficulty, in_game
+    in_game = False
     current_difficulty = difficulty
     difficulty_label.config(text="Current difficulty: " + difficulty)
     init_values(difficulty)
