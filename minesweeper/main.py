@@ -1,3 +1,4 @@
+import time as t
 import random
 from tkinter import *
 
@@ -34,14 +35,33 @@ def click_on_canvas(event):
         click_square(square_coords)
 
 
+def show_all_bombs():
+    for bomb in bombs:
+        row, column = bomb
+        paint_number_inside_square('X', row, column)
+    t.sleep(2)
+
+
 def click_square(square_coords):
-    print("clicked square ", square_coords)
-    print("neighbours: ", get_neighbours(square_coords))
     if square_coords in bombs:
+        show_all_bombs()
         show_game_over_popup()
-        reset_game()
     else:
         clear_terrain(square_coords)
+        if is_game_completed():
+            show_all_bombs()
+            show_winning_popup()
+
+
+def is_game_completed():
+    number_of_unopened_squares = 0
+    for i in range(len(matrix_states)):
+        for j in range(len(matrix_states[0])):
+            if matrix_states[i][j] == 0:
+                number_of_unopened_squares += 1
+    if number_of_unopened_squares == len(bombs):
+        return True
+    return False
 
 
 def center_window(win, height, width):
@@ -60,10 +80,10 @@ def show_winning_popup():
 
 def show_popup(finishing_message):
     win = Toplevel(window)
-    win.geometry("250x250")
+    win.geometry("70x70")
     win.title("The end")
 
-    center_window(win, 250, 250)
+    center_window(win, 70, 70)
 
     label = Label(win, text=finishing_message)
     label.place(relx=0.5, rely=0.5, anchor=CENTER)
@@ -104,9 +124,11 @@ def generate_numbers():
         row_of_numbers = []
         for j in range(board_size):
             number_of_bombs = get_number_of_bombs_next_to_coords(i, j)
-            row_of_numbers.append(number_of_bombs)
+            if (i, j) in bombs:
+                row_of_numbers.append('X')
+            else:
+                row_of_numbers.append(number_of_bombs)
         numbers.append(row_of_numbers)
-    print("numbers: ", numbers)
 
 
 def get_number_of_bombs_next_to_coords(row, column):
@@ -128,7 +150,7 @@ def init_matrix_state():
         row_states = []
         for j in range(board_size):
             row_states.append(0)
-        matrix_states.extend(row_states)
+        matrix_states.append(row_states)
 
 
 def is_inside_matrix(coords):
@@ -151,19 +173,17 @@ def get_neighbours(coords):
 
 def get_new_empty_neighbours(visited, current_coords):
     empty_neighbours = []
-    for i in [-1, 0, 1]:
-        for j in [-1, 0, 1]:
-            neighbour_coords = current_coords[0] + i, current_coords[1] + j
-            if is_inside_matrix(neighbour_coords):
-                if neighbour_coords not in bombs and neighbour_coords not in visited and \
-                        numbers[neighbour_coords[0]][neighbour_coords[1]] == 0:
-                    empty_neighbours.append(neighbour_coords)
+    for i, j in [(-1, 0), (0, 1), (1, 0), (0, -1)]:
+        neighbour_coords = current_coords[0] + i, current_coords[1] + j
+        if is_inside_matrix(neighbour_coords):
+            if neighbour_coords not in bombs and neighbour_coords not in visited and \
+                    numbers[neighbour_coords[0]][neighbour_coords[1]] == 0:
+                empty_neighbours.append(neighbour_coords)
 
     return empty_neighbours
 
 
 def paint_square(row, column, even_color, odd_color):
-    print("paint ", row, column)
     if (row + column) % 2 == 0:
         canvas.create_rectangle(column * square_size, row * square_size,
                                 (column + 1) * square_size, (row + 1) * square_size, fill=even_color)
@@ -172,13 +192,31 @@ def paint_square(row, column, even_color, odd_color):
                                 (column + 1) * square_size, (row + 1) * square_size, fill=odd_color)
 
 
+def get_square_number(row, column):
+    return numbers[row][column]
+
+
+def paint_number_inside_square(number, row, column):
+    canvas.create_text(column * square_size + square_size / 2, row * square_size + square_size / 2, text=str(number))
+
+
+def mark_open_states(list_of_squares):
+    for row, column in list_of_squares:
+        matrix_states[row][column] = 1
+
+
 def clear_squares(list_of_squares):
+    mark_open_states(list_of_squares)
+
     even_color = colors['open-square-even']
     odd_color = colors['open-square-odd']
 
     for square in list_of_squares:
         row, column = square
         paint_square(row, column, even_color, odd_color)
+        number = get_square_number(row, column)
+        if number != 0:
+            paint_number_inside_square(number, row, column)
 
 
 def get_adjacent_empty_terrain(coords):
@@ -188,8 +226,6 @@ def get_adjacent_empty_terrain(coords):
     while index < len(q):
         current_coords = q[index]
         neighbors = get_new_empty_neighbours(q, current_coords)
-        print("current square: ", current_coords)
-        print("free neighbours: ", neighbors)
         q.extend(neighbors)
         index += 1
 
@@ -211,20 +247,34 @@ def get_adjacent_numbers(terrain):
                 if is_adjacent:
                     break
 
-            if is_adjacent:
-                adjacent_squares.append((row, column))
+            if is_adjacent and (row, column) not in bombs:
+                if is_only_diagonally_linked(row, column, terrain) and is_number(row, column):
+                    adjacent_squares.append((row, column))
 
     return adjacent_squares
+
+
+def is_only_diagonally_linked(row, column, terrain):
+    for i, j in [(-1, 0), (0, 1), (1, 0), (0, -1)]:
+        coords = (row + i, column + j)
+        if coords not in terrain:
+            return True
+    return False
+
+
+def is_number(row, column):
+    return numbers[row][column] in range(1, 9)
 
 
 def clear_terrain(square_coords):
     terrain_to_clear = [square_coords]
 
-    empty_terrain = get_adjacent_empty_terrain(square_coords)
-    adjacent_numbers = get_adjacent_numbers(empty_terrain)
+    if numbers[square_coords[0]][square_coords[1]] == 0:
+        empty_terrain = get_adjacent_empty_terrain(square_coords)
+        adjacent_numbers = get_adjacent_numbers(empty_terrain)
 
-    terrain_to_clear.extend(empty_terrain)
-    terrain_to_clear.extend(adjacent_numbers)
+        terrain_to_clear.extend(empty_terrain)
+        terrain_to_clear.extend(adjacent_numbers)
 
     clear_squares(terrain_to_clear)
 
@@ -234,9 +284,16 @@ def generate_bombs(square_coords):
     board_size = size[current_difficulty][3]
     all_possible_positions = [(i, j) for i in range(board_size) for j in range(board_size)]
     all_possible_positions.remove(square_coords)
+
+    row, column = square_coords
+    for i in [-1, 0, 1]:
+        for j in [-1, 0, 1]:
+            coords = row + i, column + j
+            if coords in all_possible_positions:
+                all_possible_positions.remove(coords)
+
     number_of_bombs = size[current_difficulty][4]
     bombs = random.choices(all_possible_positions, k=number_of_bombs)
-    print("bombs: ", bombs)
 
 
 def init_values(difficulty):
