@@ -3,20 +3,26 @@ import random
 from tkinter import *
 
 window = Tk()
-current_difficulty = 'easy'
-square_size = 20
-row_height = 40
-size = {'easy': (300, 300, 0, 8, 10), 'medium': (400, 400, 1, 15, 40), 'hard': (600, 600, 2, 20, 60)}
 canvas = Canvas(window)
-in_game = False
+
 bombs = []
 matrix_states = []
 numbers = []
+in_game = False
+
 colors = {'bg': '#6e8583', 'blocked-square-even': '#006D64', 'blocked-square-odd': '#004943',
           'open-square-odd': '#6db09f', 'open-square-even': '#70cfbd'}
 
+constants = {'number_of_rows': 8, 'number_of_columns': 8, 'number_of_bombs': 10, 'flag': '🚩', 'bomb': '💣',
+             'question_mark': '?',
+             'canvas_padding': 100, 'square_size': 20, 'header_height': 40, 'number_of_placed_flags': 0,
+             'popup_height': 70, 'popup_width': 300}
+
+size = {'easy': (300, 300, 0, 8, 10), 'medium': (400, 400, 1, 15, 40), 'hard': (600, 600, 2, 20, 60)}
+
 
 def get_square_from_coords(x, y):
+    square_size = constants['square_size']
     return int(y/square_size), int(x/square_size)
 
 
@@ -25,20 +31,79 @@ def click_on_canvas(event):
     y = canvas.canvasy(event.y)
 
     square_coords = get_square_from_coords(x, y)
-    print("square clicked: ", square_coords)
 
     global in_game
     if not in_game:
         in_game = True
         start_round(square_coords)
-    else:
+    elif matrix_states[square_coords[0]][square_coords[1]] != 2:
         click_square(square_coords)
+
+
+def place_flag(event):
+    x = canvas.canvasx(event.x)
+    y = canvas.canvasy(event.y)
+
+    square_coords = get_square_from_coords(x, y)
+
+    global in_game
+    if in_game:
+        in_game = True
+        place_or_erase_flag_on_square(square_coords)
+
+
+def place_question_mark(event):
+    x = canvas.canvasx(event.x)
+    y = canvas.canvasy(event.y)
+
+    square_coords = get_square_from_coords(x, y)
+
+    global in_game
+    if in_game:
+        in_game = True
+        place_or_erase_question_mark_on_square(square_coords)
+
+
+def place_or_erase_question_mark_on_square(square_coords):
+    row, column = square_coords
+    global constants
+
+    if matrix_states[row][column] == 0:
+        paint_text_inside_square(constants['question_mark'], row, column)
+        matrix_states[row][column] = 3
+
+    elif matrix_states[row][column] == 3:
+        erase_mark(row, column)
+        matrix_states[row][column] = 0
+
+
+def place_or_erase_flag_on_square(square_coords):
+    row, column = square_coords
+    global constants
+
+    if matrix_states[row][column] == 0:
+        paint_text_inside_square(constants['flag'], row, column)
+        matrix_states[row][column] = 2
+        constants['number_of_placed_flags'] += 1
+
+    elif matrix_states[row][column] == 2:
+        constants['number_of_placed_flags'] -= 1
+        erase_mark(row, column)
+        matrix_states[row][column] = 0
+
+
+def erase_mark(row, column):
+    even_color = colors['blocked-square-even']
+    odd_color = colors['blocked-square-odd']
+
+    paint_square(row, column, even_color, odd_color)
 
 
 def show_all_bombs():
     for bomb in bombs:
         row, column = bomb
-        paint_number_inside_square('X', row, column)
+        erase_mark(row, column)
+        paint_text_inside_square(constants['bomb'], row, column)
     t.sleep(2)
 
 
@@ -52,13 +117,16 @@ def click_square(square_coords):
             show_all_bombs()
             show_winning_popup()
 
+    print_matrix(matrix_states)
+
 
 def is_game_completed():
     number_of_unopened_squares = 0
     for i in range(len(matrix_states)):
         for j in range(len(matrix_states[0])):
-            if matrix_states[i][j] == 0:
+            if matrix_states[i][j] in [0, 2]:
                 number_of_unopened_squares += 1
+    print("unopened squares: ", number_of_unopened_squares, ", bombs: ", len(bombs))
     if number_of_unopened_squares == len(bombs):
         return True
     return False
@@ -80,10 +148,11 @@ def show_winning_popup():
 
 def show_popup(finishing_message):
     win = Toplevel(window)
-    win.geometry("70x70")
+    geometry = str(constants['popup_height']) + 'x' + str(constants['popup_width'])
+    win.geometry(geometry)
     win.title("The end")
 
-    center_window(win, 70, 70)
+    center_window(win, constants['popup_height'], constants['popup_width'])
 
     label = Label(win, text=finishing_message)
     label.place(relx=0.5, rely=0.5, anchor=CENTER)
@@ -104,7 +173,7 @@ def reset_and_close_window(win):
 def reset_game():
     global in_game
     in_game = False
-    init_values(current_difficulty)
+    init_values(constants['number_of_rows'], constants['number_of_columns'], constants['number_of_bombs'])
     update_board()
 
 
@@ -115,14 +184,21 @@ def start_round(square_coords):
     clear_terrain(square_coords)
 
 
+def print_matrix(matrix):
+    print("------------------------------------------")
+    for row in matrix:
+        print(row)
+
+
 def generate_numbers():
     global numbers
     numbers = []
-    board_size = size[current_difficulty][3]
+    rows = constants['number_of_rows']
+    columns = constants['number_of_columns']
 
-    for i in range(board_size):
+    for i in range(rows):
         row_of_numbers = []
-        for j in range(board_size):
+        for j in range(columns):
             number_of_bombs = get_number_of_bombs_next_to_coords(i, j)
             if (i, j) in bombs:
                 row_of_numbers.append('X')
@@ -144,19 +220,22 @@ def get_number_of_bombs_next_to_coords(row, column):
 def init_matrix_state():
     global matrix_states
     matrix_states = []
-    board_size = size[current_difficulty][3]
+    rows = constants['number_of_rows']
+    columns = constants['number_of_columns']
 
-    for i in range(board_size):
+    for i in range(rows):
         row_states = []
-        for j in range(board_size):
+        for j in range(columns):
             row_states.append(0)
         matrix_states.append(row_states)
 
 
 def is_inside_matrix(coords):
-    board_size = size[current_difficulty][3]
+    rows = constants['number_of_rows']
+    columns = constants['number_of_columns']
+
     row, column = coords
-    if row < 0 or column < 0 or row > board_size-1 or column > board_size-1:
+    if row < 0 or column < 0 or row > rows-1 or column > columns-1:
         return False
     return True
 
@@ -184,6 +263,7 @@ def get_new_empty_neighbours(visited, current_coords):
 
 
 def paint_square(row, column, even_color, odd_color):
+    square_size = constants['square_size']
     if (row + column) % 2 == 0:
         canvas.create_rectangle(column * square_size, row * square_size,
                                 (column + 1) * square_size, (row + 1) * square_size, fill=even_color)
@@ -196,7 +276,8 @@ def get_square_number(row, column):
     return numbers[row][column]
 
 
-def paint_number_inside_square(number, row, column):
+def paint_text_inside_square(number, row, column):
+    square_size = constants['square_size']
     canvas.create_text(column * square_size + square_size / 2, row * square_size + square_size / 2, text=str(number))
 
 
@@ -216,7 +297,7 @@ def clear_squares(list_of_squares):
         paint_square(row, column, even_color, odd_color)
         number = get_square_number(row, column)
         if number != 0:
-            paint_number_inside_square(number, row, column)
+            paint_text_inside_square(number, row, column)
 
 
 def get_adjacent_empty_terrain(coords):
@@ -234,9 +315,11 @@ def get_adjacent_empty_terrain(coords):
 
 def get_adjacent_numbers(terrain):
     adjacent_squares = []
-    board_size = size[current_difficulty][3]
-    for row in range(board_size):
-        for column in range(board_size):
+    rows = constants['number_of_rows']
+    columns = constants['number_of_columns']
+
+    for row in range(rows):
+        for column in range(columns):
             is_adjacent = False
             for i in [-1, 0, 1]:
                 for j in [-1, 0, 1]:
@@ -281,8 +364,9 @@ def clear_terrain(square_coords):
 
 def generate_bombs(square_coords):
     global bombs
-    board_size = size[current_difficulty][3]
-    all_possible_positions = [(i, j) for i in range(board_size) for j in range(board_size)]
+    rows = constants['number_of_rows']
+    columns = constants['number_of_columns']
+    all_possible_positions = [(i, j) for i in range(rows) for j in range(columns)]
     all_possible_positions.remove(square_coords)
 
     row, column = square_coords
@@ -292,13 +376,19 @@ def generate_bombs(square_coords):
             if coords in all_possible_positions:
                 all_possible_positions.remove(coords)
 
-    number_of_bombs = size[current_difficulty][4]
+    number_of_bombs = constants['number_of_bombs']
     bombs = random.choices(all_possible_positions, k=number_of_bombs)
 
 
-def init_values(difficulty):
-    window_width = size[difficulty][0]
-    window_height = size[difficulty][1]
+def init_values(rows, columns, number_of_bombs):
+    global constants
+
+    constants['number_of_rows'] = rows
+    constants['number_of_columns'] = columns
+    constants['number_of_bombs'] = number_of_bombs
+
+    window_width = constants['square_size'] * columns + constants['canvas_padding'] * 2
+    window_height = constants['square_size'] * rows + constants['canvas_padding'] * 2
     window.title('Minesweeper')
 
     center_window(window, window_height, window_width)
@@ -309,64 +399,109 @@ def init_values(difficulty):
 
 
 def init_board():
-    board_size = size[current_difficulty][3]
-    canvas_size = board_size * square_size
-    canvas.config(width=canvas_size, height=canvas_size)
+    canvas_width = constants['number_of_columns'] * constants['square_size']
+    canvas_height = constants['number_of_rows'] * constants['square_size']
+    canvas.config(width=canvas_width, height=canvas_height)
+
     canvas.grid(row=1, column=0)
     canvas.place(relx=0.5, rely=0.5, anchor=CENTER)
     canvas.bind("<Button-1>", click_on_canvas)
+    canvas.bind("<Button-2>", place_question_mark)
+    canvas.bind("<Button-3>", place_flag)
 
     paint_squares()
 
 
 def paint_squares():
-    number_of_squares = size[current_difficulty][3]
+    rows = constants['number_of_rows']
+    columns = constants['number_of_columns']
     even_color = colors['blocked-square-even']
     odd_color = colors['blocked-square-odd']
 
-    for i in range(number_of_squares):
-        for j in range(number_of_squares):
+    for i in range(rows):
+        for j in range(columns):
             paint_square(i, j, even_color, odd_color)
 
 
 def update_board():
-    board_size = size[current_difficulty][3]
-    canvas_size = board_size * square_size
-    canvas.config(width=canvas_size, height=canvas_size)
+    canvas_width = constants['number_of_columns'] * constants['square_size']
+    canvas_height = constants['number_of_rows'] * constants['square_size']
+    canvas.config(width=canvas_width, height=canvas_height)
     canvas.delete("all")
     paint_squares()
 
 
-def update_difficulty(difficulty, difficulty_label):
-    global current_difficulty, in_game
-    in_game = False
-    current_difficulty = difficulty
-    difficulty_label.config(text="Current difficulty: " + difficulty)
-    init_values(difficulty)
-    update_board()
+def is_valid_number(string):
+    try:
+        number = int(string)
+        if number in range(4, 30):
+            return True
+        return False
+
+    except ValueError:
+        return False
+
+
+def is_valid_number_of_bombs(number_of_bombs, rows, columns):
+    try:
+        number = int(number_of_bombs)
+        if number in range(1, rows * columns):
+            return True
+        return False
+
+    except ValueError:
+        return False
+
+
+def get_number(string):
+    return int(string)
+
+
+def update_custom_difficulty(rows, columns, number_of_bombs):
+    if is_valid_number(rows) and is_valid_number(columns):
+        row_number = get_number(rows)
+        column_number = get_number(columns)
+
+        if is_valid_number_of_bombs(number_of_bombs, row_number, column_number):
+            global in_game
+            in_game = False
+
+            init_values(row_number, column_number, get_number(number_of_bombs))
+            update_board()
 
 
 # noinspection PyTypeChecker
 def init_header():
-    header = Canvas(window, width=window.winfo_screenwidth(), height=row_height)
+    header_height = constants['header_height']
+    header = Canvas(window, width=window.winfo_screenwidth(), height=header_height)
     header.grid(row=0, column=0)
 
-    difficulty_label = Label(header, text="Current difficulty: " + current_difficulty)
-    difficulty_label.grid(row=0, column=3, pady=2)
+    rows_label = Label(header, text="Rows:")
+    rows_entry = Entry(header, width=4)
+    columns_label = Label(header, text="Columns:")
+    columns_entry = Entry(header, width=4)
+    bombs_label = Label(header, text="Bombs:")
+    bombs_entry = Entry(header, width=4)
+    number_of_remaining_flags = len(bombs) - constants['number_of_placed_flags']
+    flags = constants['flag']
+    remaining_flags_label = Label(header, text=flags + ": " + str(number_of_remaining_flags))
 
-    easy_button = Button(header, text='Easy', command=lambda: update_difficulty('easy', difficulty_label))
-    easy_button.grid(row=0, column=0, pady=2)
+    start_button = Button(header, text='Start',
+                          command=lambda: update_custom_difficulty(
+                              rows_entry.get(), columns_entry.get(), bombs_entry.get()))
 
-    medium_button = Button(header, text='Medium', command=lambda: update_difficulty('medium', difficulty_label))
-    medium_button.grid(row=0, column=1, pady=2)
-
-    hard_button = Button(header, text='Hard', command=lambda: update_difficulty('hard', difficulty_label))
-    hard_button.grid(row=0, column=2, pady=2)
+    rows_label.pack(side=LEFT)
+    rows_entry.pack(side=LEFT)
+    columns_label.pack(side=LEFT)
+    columns_entry.pack(side=LEFT)
+    bombs_label.pack(side=LEFT)
+    bombs_entry.pack(side=LEFT)
+    remaining_flags_label.pack(side=LEFT)
+    start_button.pack(side=LEFT)
 
 
 def start_game():
-    initial_difficulty = 'easy'
-    init_values(initial_difficulty)
+    init_values(constants['number_of_rows'], constants['number_of_columns'], constants['number_of_bombs'])
 
     init_header()
     init_board()
