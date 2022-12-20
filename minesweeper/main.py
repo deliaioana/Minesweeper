@@ -1,14 +1,25 @@
 import time as t
 import random
 from tkinter import *
+from threading import Timer, Thread
+from time import perf_counter
 
 window = Tk()
 canvas = Canvas(window)
+timer_entry = Entry()
+timer = Timer(0, int)
+timer_thread = Thread()
+time_left = 0
+time_to_wait = 0
+time_label = Label()
+thread_running = False
+remaining_flags_label = Label()
 
 bombs = []
 matrix_states = []
 numbers = []
 in_game = False
+game_finished = False
 
 colors = {'bg': '#6e8583', 'blocked-square-even': '#006D64', 'blocked-square-odd': '#004943',
           'open-square-odd': '#6db09f', 'open-square-even': '#70cfbd'}
@@ -32,12 +43,15 @@ def click_on_canvas(event):
 
     square_coords = get_square_from_coords(x, y)
 
-    global in_game
-    if not in_game:
-        in_game = True
-        start_round(square_coords)
-    elif matrix_states[square_coords[0]][square_coords[1]] != 2:
-        click_square(square_coords)
+    global in_game, game_finished
+
+    if not game_finished:
+        if not in_game:
+            in_game = True
+            game_finished = False
+            start_round(square_coords)
+        elif matrix_states[square_coords[0]][square_coords[1]] != 2:
+            click_square(square_coords)
 
 
 def place_flag(event):
@@ -90,6 +104,14 @@ def place_or_erase_flag_on_square(square_coords):
         constants['number_of_placed_flags'] -= 1
         erase_mark(row, column)
         matrix_states[row][column] = 0
+
+    refresh_label(remaining_flags_label)
+
+
+def refresh_label(label):
+    number_of_remaining_flags = constants['number_of_bombs'] - constants['number_of_placed_flags']
+    flags = constants['flag']
+    label.config(text=flags + ": " + str(number_of_remaining_flags))
 
 
 def erase_mark(row, column):
@@ -147,6 +169,10 @@ def show_winning_popup():
 
 
 def show_popup(finishing_message):
+    global game_finished, timer
+    game_finished = True
+    timer.cancel()
+
     win = Toplevel(window)
     geometry = str(constants['popup_height']) + 'x' + str(constants['popup_width'])
     win.geometry(geometry)
@@ -171,8 +197,10 @@ def reset_and_close_window(win):
 
 
 def reset_game():
-    global in_game
+    global in_game, game_finished
     in_game = False
+    game_finished = False
+
     init_values(constants['number_of_rows'], constants['number_of_columns'], constants['number_of_bombs'])
     update_board()
 
@@ -397,6 +425,8 @@ def init_values(rows, columns, number_of_bombs):
     bg_color = colors['bg']
     window.configure(bg=bg_color)
 
+    refresh_label(remaining_flags_label)
+
 
 def init_board():
     canvas_width = constants['number_of_columns'] * constants['square_size']
@@ -453,25 +483,81 @@ def is_valid_number_of_bombs(number_of_bombs, rows, columns):
         return False
 
 
+def stop_thread():
+    global thread_running
+    thread_running = False
+
+
 def get_number(string):
     return int(string)
 
 
-def update_custom_difficulty(rows, columns, number_of_bombs):
-    if is_valid_number(rows) and is_valid_number(columns):
-        row_number = get_number(rows)
-        column_number = get_number(columns)
+def update_custom_difficulty_and_restart(rows, columns, number_of_bombs):
+    global in_game
 
-        if is_valid_number_of_bombs(number_of_bombs, row_number, column_number):
-            global in_game
-            in_game = False
+    stop_thread()
 
-            init_values(row_number, column_number, get_number(number_of_bombs))
-            update_board()
+    if in_game:
+        reset_game()
+    else:
+        time = 0
+        if is_valid_number(rows) and is_valid_number(columns):
+            row_number = get_number(rows)
+            column_number = get_number(columns)
+
+            if is_valid_number(timer_entry.get()):
+                time = get_number(timer_entry.get())
+                print("time: ", time)
+
+            if is_valid_number_of_bombs(number_of_bombs, row_number, column_number):
+                in_game = False
+
+                init_values(row_number, column_number, get_number(number_of_bombs))
+                update_board()
+
+                if time != 0:
+                    start_timer(time)
+
+
+def refresh_time_label():
+    print("refresh time label")
+    time_label.config(text=str(time_left))
+
+
+def update_seconds():
+    global time_left
+    start_time = perf_counter()
+
+    while thread_running:
+        if game_finished:
+            break
+        current_time = perf_counter()
+        difference = int(current_time - start_time)
+        time_left = time_to_wait - difference
+        refresh_time_label()
+
+
+def start_timer(time):
+    print("start timer")
+    global timer, timer_thread, time_to_wait, thread_running
+    thread_running = True
+    time_to_wait = time
+    timer = Timer(time, show_time_over_popup)
+    timer_thread = Thread(target=update_seconds)
+    timer_thread.start()
+
+    timer.start()
+
+
+def show_time_over_popup():
+    print("time over")
+    show_popup("TIME OVER! GAME OVER!")
 
 
 # noinspection PyTypeChecker
 def init_header():
+    global remaining_flags_label
+
     header_height = constants['header_height']
     header = Canvas(window, width=window.winfo_screenwidth(), height=header_height)
     header.grid(row=0, column=0)
@@ -487,7 +573,7 @@ def init_header():
     remaining_flags_label = Label(header, text=flags + ": " + str(number_of_remaining_flags))
 
     start_button = Button(header, text='Start',
-                          command=lambda: update_custom_difficulty(
+                          command=lambda: update_custom_difficulty_and_restart(
                               rows_entry.get(), columns_entry.get(), bombs_entry.get()))
 
     rows_label.pack(side=LEFT)
@@ -500,10 +586,26 @@ def init_header():
     start_button.pack(side=LEFT)
 
 
+def init_timer_section():
+    section_height = constants['header_height']
+    section = Canvas(window, width=window.winfo_screenwidth(), height=section_height)
+    section.grid(row=1, column=0)
+
+    global timer_entry, time_label
+    timer_label = Label(section, text="Timer:")
+    timer_entry = Entry(section, width=4)
+    time_label = Label(section, text="Left: " + str(time_left))
+
+    timer_label.pack(side=LEFT)
+    timer_entry.pack(side=LEFT)
+    time_label.pack(side=LEFT)
+
+
 def start_game():
     init_values(constants['number_of_rows'], constants['number_of_columns'], constants['number_of_bombs'])
 
     init_header()
+    init_timer_section()
     init_board()
 
     window.mainloop()
