@@ -31,7 +31,10 @@ COLORS = {'bg': '#6e8583', 'blocked-square-even': '#006D64', 'blocked-square-odd
 CONSTANTS = {'number_of_rows': 8, 'number_of_columns': 8, 'number_of_bombs': 10, 'flag': '🚩', 'bomb': '💣',
              'question_mark': '?',
              'canvas_padding': 100, 'square_size': 20, 'header_height': 40, 'number_of_placed_flags': 0,
-             'popup_height': 70, 'popup_width': 300}
+             'popup_height': 70, 'popup_width': 300, 'entry_width': 4, 'maximum_board_size': 30,
+             'minimum_board_size': 4, 'maximum_number_of_seconds': 1000}
+
+STATES = {'blocked': 0, 'unblocked': 1, 'flagged': 2, 'marked': 3}
 
 
 def stop_thread():
@@ -163,7 +166,7 @@ def click_on_canvas(event):
             IN_GAME = True
             GAME_FINISHED = False
             start_round(square_coords)
-        elif MATRIX_OF_STATES[square_coords[0]][square_coords[1]] != 2:
+        elif MATRIX_OF_STATES[square_coords[0]][square_coords[1]] != STATES['flagged']:
             click_square(square_coords)
 
 
@@ -221,13 +224,13 @@ def place_or_erase_question_mark_on_square(square_coords):
     row, column = square_coords
     global CONSTANTS
 
-    if MATRIX_OF_STATES[row][column] == 0:
+    if MATRIX_OF_STATES[row][column] == STATES['blocked']:
         paint_text_inside_square(CONSTANTS['question_mark'], row, column)
-        MATRIX_OF_STATES[row][column] = 3
+        MATRIX_OF_STATES[row][column] = STATES['marked']
 
-    elif MATRIX_OF_STATES[row][column] == 3:
+    elif MATRIX_OF_STATES[row][column] == STATES['marked']:
         erase_mark(row, column)
-        MATRIX_OF_STATES[row][column] = 0
+        MATRIX_OF_STATES[row][column] = STATES['blocked']
 
 
 def place_or_erase_flag_on_square(square_coords):
@@ -242,15 +245,15 @@ def place_or_erase_flag_on_square(square_coords):
     row, column = square_coords
     global CONSTANTS
 
-    if MATRIX_OF_STATES[row][column] == 0:
+    if MATRIX_OF_STATES[row][column] == STATES['blocked']:
         paint_text_inside_square(CONSTANTS['flag'], row, column)
-        MATRIX_OF_STATES[row][column] = 2
+        MATRIX_OF_STATES[row][column] = STATES['flagged']
         CONSTANTS['number_of_placed_flags'] += 1
 
-    elif MATRIX_OF_STATES[row][column] == 2:
+    elif MATRIX_OF_STATES[row][column] == STATES['flagged']:
         CONSTANTS['number_of_placed_flags'] -= 1
         erase_mark(row, column)
-        MATRIX_OF_STATES[row][column] = 0
+        MATRIX_OF_STATES[row][column] = STATES['blocked']
 
     refresh_flag_label()
 
@@ -268,7 +271,7 @@ def count_flags():
     count = 0
     for row in MATRIX_OF_STATES:
         for state in row:
-            if state == 2:
+            if state == STATES['flagged']:
                 count += 1
     return count
 
@@ -307,7 +310,6 @@ def show_all_bombs():
         row, column = bomb
         erase_mark(row, column)
         paint_text_inside_square(CONSTANTS['bomb'], row, column)
-    t.sleep(2)
 
 
 def click_square(square_coords):
@@ -343,7 +345,7 @@ def is_game_completed():
     number_of_unopened_squares = 0
     for i in range(len(MATRIX_OF_STATES)):
         for j in range(len(MATRIX_OF_STATES[0])):
-            if MATRIX_OF_STATES[i][j] in [0, 2]:
+            if MATRIX_OF_STATES[i][j] in [STATES['blocked'], STATES['flagged']]:
                 number_of_unopened_squares += 1
     if number_of_unopened_squares == len(BOMBS):
         return True
@@ -509,7 +511,7 @@ def init_matrix_state():
     for i in range(rows):
         row_states = []
         for j in range(columns):
-            row_states.append(0)
+            row_states.append(STATES['blocked'])
         MATRIX_OF_STATES.append(row_states)
 
 
@@ -672,7 +674,7 @@ def mark_open_states(list_of_squares):
     """
 
     for row, column in list_of_squares:
-        MATRIX_OF_STATES[row][column] = 1
+        MATRIX_OF_STATES[row][column] = STATES['unblocked']
 
 
 def clear_squares(list_of_squares):
@@ -958,7 +960,7 @@ def is_valid_number_of_rows_or_columns(string):
 
     try:
         number = int(string)
-        if number in range(4, 30):
+        if number in range(CONSTANTS['minimum_board_size'], CONSTANTS['maximum_board_size']):
             return True
         return False
 
@@ -982,7 +984,7 @@ def is_valid_number_of_bombs(number_of_bombs, rows, columns):
 
     try:
         number = int(number_of_bombs)
-        if number in range(1, rows * columns):
+        if number in range(1, int(rows * columns / 2)):
             return True
         return False
 
@@ -1026,7 +1028,7 @@ def is_valid_time(time):
 
     try:
         number = int(time)
-        if number in range(1000):
+        if number in range(CONSTANTS['maximum_number_of_seconds']):
             return True
         return False
 
@@ -1057,11 +1059,11 @@ def init_header():
     header.grid(row=0, column=0)
 
     rows_label = Label(header, text="Rows:")
-    rows_entry = Entry(header, width=4)
+    rows_entry = Entry(header, width=CONSTANTS['entry_width'])
     columns_label = Label(header, text="Columns:")
-    columns_entry = Entry(header, width=4)
+    columns_entry = Entry(header, width=CONSTANTS['entry_width'])
     bombs_label = Label(header, text="Bombs:")
-    bombs_entry = Entry(header, width=4)
+    bombs_entry = Entry(header, width=CONSTANTS['entry_width'])
     number_of_remaining_flags = len(BOMBS) - CONSTANTS['number_of_placed_flags']
     flags = CONSTANTS['flag']
     REMAINING_FLAGS_LABEL = Label(header, text=flags + ": " + str(number_of_remaining_flags))
@@ -1089,7 +1091,7 @@ def init_timer_section():
 
     global TIMER_ENTRY, TIME_LABEL
     timer_label = Label(section, text="Timer:")
-    TIMER_ENTRY = Entry(section, width=4)
+    TIMER_ENTRY = Entry(section, width=CONSTANTS['entry_width'])
     TIME_LABEL = Label(section, text="Left: " + str(TIME_LEFT))
 
     timer_label.pack(side=LEFT)
