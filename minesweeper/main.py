@@ -33,7 +33,7 @@ CONSTANTS = {'number_of_rows': 8, 'number_of_columns': 8, 'number_of_bombs': 10,
 
 
 def stop_thread():
-    """Stops the timer thread."""
+    """Stops the global timer thread called TIMER_THREAD."""
 
     global THREAD_STOP
     THREAD_STOP.set()
@@ -42,7 +42,8 @@ def stop_thread():
 
 
 def update_seconds():
-    """Updates the second inside a label in a loop while the thread is still running."""
+    """Updates the second inside the global label for seconds called TIME_LABEL
+    in a loop while the thread is still running."""
 
     global TIME_LEFT, THREAD_STOP
     start_time = perf_counter()
@@ -59,7 +60,13 @@ def update_seconds():
 
 
 def start_timer(time):
-    """Starts a timer on a new thread."""
+    """Starts a timer on a new thread for 'time' seconds.
+
+    Parameters
+    ----------
+    time : int
+        Time in seconds
+    """
 
     global TIMER_THREAD, TIME_TO_WAIT, THREAD_STOP
 
@@ -71,7 +78,18 @@ def start_timer(time):
 
 
 def update_custom_difficulty_and_restart(rows, columns, number_of_bombs):
-    """Resets the game according and interrupts the current running game. Also starts the timer if required."""
+    """Resets the game with 'rows' rows, 'columns' columns and 'number_of_bombs' bombs
+    and interrupts the current running game. Also starts the timer if required.
+
+    Parameters
+    ----------
+    rows : str
+        A string given as input intended to represent the number of rows
+    columns : str
+        A string given as input intended to represent the number of columns
+    number_of_bombs : str
+        A string given as input intended to represent the number of bombs
+    """
 
     global IN_GAME
 
@@ -88,7 +106,7 @@ def update_custom_difficulty_and_restart(rows, columns, number_of_bombs):
 
     else:
         time = 0
-        if is_valid_number(rows) and is_valid_number(columns):
+        if is_valid_number_of_rows_or_columns(rows) and is_valid_number_of_rows_or_columns(columns):
             row_number = get_number(rows)
             column_number = get_number(columns)
 
@@ -106,7 +124,15 @@ def update_custom_difficulty_and_restart(rows, columns, number_of_bombs):
 
 
 def get_square_from_coords(x, y):
-    """Gets square coordinates in matrix from screen coordinates."""
+    """Gets square coordinates in matrix from screen coordinates.
+
+    Parameters
+    ----------
+    x : int
+        Coordinate on Ox axis from a click on the board
+    y : int
+        Coordinate on Oy axis from a click on the board
+    """
 
     square_size = CONSTANTS['square_size']
     return int(y/square_size), int(x/square_size)
@@ -114,7 +140,13 @@ def get_square_from_coords(x, y):
 
 def click_on_canvas(event):
     """Handles board left-clicks. They either start a new round or get handles in another function,
-    if that square is not flagged as a bomb."""
+    if that square is not flagged as a bomb.
+
+    Parameters
+    ----------
+    event : Event
+        The click event on the board
+    """
 
     x = CANVAS.canvasx(event.x)
     y = CANVAS.canvasy(event.y)
@@ -133,7 +165,13 @@ def click_on_canvas(event):
 
 
 def place_flag(event):
-    """Calls the function to place or remove flag on the computed square from the given coordinates."""
+    """Calls the function to place or remove flag on the computed square from the given coordinates.
+
+    Parameters
+    ----------
+    event : Event
+        The click event on the board
+    """
 
     x = CANVAS.canvasx(event.x)
     y = CANVAS.canvasy(event.y)
@@ -147,7 +185,13 @@ def place_flag(event):
 
 
 def place_question_mark(event):
-    """Calls the function to place or remove question mark on the computed square from the given coordinates."""
+    """Calls the function to place or remove question mark on the computed square from the given coordinates.
+
+    Parameters
+    ----------
+    event : Event
+        The click event on the board
+    """
 
     x = CANVAS.canvasx(event.x)
     y = CANVAS.canvasy(event.y)
@@ -161,7 +205,13 @@ def place_question_mark(event):
 
 
 def place_or_erase_question_mark_on_square(square_coords):
-    """Places or removes an already placed question mark on a specific square."""
+    """Places or removes an already placed question mark on a specific square.
+
+    Parameters
+    ----------
+    square_coords : tuple
+        Tuple that represents the coordinates of the square on the board
+    """
 
     row, column = square_coords
     global CONSTANTS
@@ -176,7 +226,13 @@ def place_or_erase_question_mark_on_square(square_coords):
 
 
 def place_or_erase_flag_on_square(square_coords):
-    """Places or removes an already placed flag on a specific square."""
+    """Places or removes an already placed flag on a specific square.
+
+    Parameters
+    ----------
+    square_coords : tuple
+        Tuple that represents the coordinates of the square on the board
+    """
 
     row, column = square_coords
     global CONSTANTS
@@ -195,7 +251,13 @@ def place_or_erase_flag_on_square(square_coords):
 
 
 def count_flags():
-    """Counts placed flags."""
+    """Counts placed flags.
+
+    Returns
+    ----------
+    int
+        An integer that represents the number of flags that are currently on the board
+    """
 
     count = 0
     for row in MATRIX_OF_STATES:
@@ -216,7 +278,15 @@ def refresh_flag_label():
 
 
 def erase_mark(row, column):
-    """Erases any mark from a blocked square."""
+    """Erases any mark from a blocked square.
+
+    Parameters
+    ----------
+    row : int
+        The row of a square inside the board
+    column : int
+        The column of a square inside the board
+    """
 
     even_color = COLORS['blocked-square-even']
     odd_color = COLORS['blocked-square-odd']
@@ -235,7 +305,13 @@ def show_all_bombs():
 
 
 def click_square(square_coords):
-    """Handles square left-clicks, and game completion in case of winning or losing by clicking a bomb."""
+    """Handles square left-clicks, and game completion in case of winning or losing by clicking a bomb.
+
+    Parameters
+    ----------
+    square_coords : tuple
+        Tuple that represents the coordinates of the square on the board
+    """
 
     if square_coords in BOMBS:
         show_all_bombs()
@@ -248,7 +324,13 @@ def click_square(square_coords):
 
 
 def is_game_completed():
-    """Checks if the game is won by counting blocked position."""
+    """Checks if the game is won by counting blocked position.
+
+    Returns
+    ----------
+    bool
+        A bool representing the state of the game (True = complete, False = incomplete)
+    """
 
     number_of_unopened_squares = 0
     for i in range(len(MATRIX_OF_STATES)):
@@ -261,7 +343,17 @@ def is_game_completed():
 
 
 def center_window(win, height, width):
-    """Centers a window."""
+    """Centers a window.
+
+    Parameters
+    ----------
+    win : Window
+        A window
+    height : int
+        The height of the window
+    width : int
+        The width of the window
+    """
 
     screen_width = win.winfo_screenwidth()
     screen_height = win.winfo_screenheight()
@@ -279,7 +371,13 @@ def show_winning_popup():
 
 
 def show_popup(finishing_message):
-    """Displays a popup window showing that the game was finished and allowing the player to restart the game."""
+    """Displays a popup window showing that the game was finished and allowing the player to restart the game.
+
+    Parameters
+    ----------
+    finishing_message : str
+        The message that will be displayed on the popup window
+    """
 
     global GAME_FINISHED
     GAME_FINISHED = True
@@ -305,7 +403,13 @@ def show_game_over_popup():
 
 
 def reset_and_close_window(win):
-    """Resets the current window and resets game values."""
+    """Resets the current window and resets game values.
+
+    Parameters
+    ----------
+    win : Window
+        The window that will de refreshed
+    """
 
     win.destroy()
     reset_game()
@@ -323,7 +427,13 @@ def reset_game():
 
 
 def start_round(square_coords):
-    """Initializes the round values, generates bombs and square numbers, clears terrain from clicked square."""
+    """Initializes the round values, generates bombs and square numbers, clears terrain from clicked square.
+
+    Parameters
+    ----------
+    square_coords : tuple
+        Tuple that represents the coordinates of the square on the board
+    """
 
     init_matrix_state()
     generate_bombs(square_coords)
@@ -351,7 +461,20 @@ def generate_numbers():
 
 
 def get_number_of_bombs_next_to_coords(row, column):
-    """Computes the number of bombs next to a given square."""
+    """Computes the number of bombs next to a given square.
+
+    Parameters
+    ----------
+    row : int
+        The row of a square inside the board
+    column : int
+        The column of a square inside the board
+
+    Returns
+    ----------
+    int
+        An integer that represents the number of bombs adjacent to the given square
+    """
 
     number_of_bombs = 0
     for i in [-1, 0, 1]:
@@ -378,7 +501,19 @@ def init_matrix_state():
 
 
 def is_inside_matrix(coords):
-    """Checks if coordinates are not out of matrix bounds."""
+    """Checks if coordinates are not out of matrix bounds.
+
+    Parameters
+    ----------
+    coords : tuple
+        Tuple that represents the coordinates a square that may be on the board
+
+    Returns
+    ----------
+    bool
+        A bool showing if the given square coordinates are inside the board
+        (True = inside the board, False = invalid square)
+    """
 
     rows = CONSTANTS['number_of_rows']
     columns = CONSTANTS['number_of_columns']
@@ -390,7 +525,18 @@ def is_inside_matrix(coords):
 
 
 def get_neighbours(coords):
-    """Returns neighbouring squares for a given square."""
+    """Returns neighbouring squares for a given square.
+
+    Parameters
+    ----------
+    coords : tuple
+        Tuple that represents the coordinates of the square on the board
+
+    Returns
+    ----------
+    list
+        A list of tuples representing coordinates of squares that are adjacent to the given square
+    """
 
     neighbours = []
     for i in [-1, 0, 1]:
@@ -402,7 +548,21 @@ def get_neighbours(coords):
 
 
 def get_new_empty_neighbours(visited, current_coords):
-    """Returns unvisited horizontally or vertically linked squares with zero bombs as neighbours to a given one."""
+    """Returns unvisited horizontally or vertically linked squares with zero bombs as neighbours to a given one.
+
+    Parameters
+    ----------
+    visited : list
+        A list of already checked squares
+    current_coords : tuple
+        A tuple that represents the coordinates of the square on the board
+
+    Return
+    ----------
+    list
+        A list of tuples representing coordinates of squares that are adjacent to zero bombs,
+        are not found inside the visited list, and are also adjacent to the given square
+    """
 
     empty_neighbours = []
     for i, j in [(-1, 0), (0, 1), (1, 0), (0, -1)]:
@@ -416,7 +576,19 @@ def get_new_empty_neighbours(visited, current_coords):
 
 
 def paint_square(row, column, even_color, odd_color):
-    """Paints a square by matrix indexes with one of the two colors, resembling a chessboard."""
+    """Paints a square by matrix indexes with one of the two colors, resembling a chessboard.
+
+    Parameters
+    ----------
+    row : int
+        The row of a square inside the board
+    column : int
+        The column of a square inside the board
+    even_color : str
+        A string representing the color for the squares with even sum of indexes
+    odd_color : str
+        A string representing the color for the squares with odd sum of indexes
+    """
 
     square_size = CONSTANTS['square_size']
     if (row + column) % 2 == 0:
@@ -428,27 +600,67 @@ def paint_square(row, column, even_color, odd_color):
 
 
 def get_square_number(row, column):
-    """Returns the number of bomb neighbours for a given square."""
+    """Returns the number of bomb neighbours for a given square.
+
+    Parameters
+    ----------
+    row : int
+        The row of a square inside the board
+    column : int
+        The column of a square inside the board
+
+    Returns
+    ---------
+    int
+        An integer representing the number of bombs adjacent to the given square
+    """
 
     return NUMBERS[row][column]
 
 
-def paint_text_inside_square(number, row, column):
-    """Paints the given text inside a square given by index."""
+def paint_text_inside_square(text, row, column):
+    """Paints the given text inside a square given by index.
+
+    Parameters
+    ----------
+    text : int
+        The text that will be painted inside the given square
+    row : int
+        The row of a square inside the board
+    column : int
+        The column of a square inside the board
+
+    Returns
+    ---------
+    int
+        An integer representing the number of bombs adjacent to the given square
+    """
 
     square_size = CONSTANTS['square_size']
-    CANVAS.create_text(column * square_size + square_size / 2, row * square_size + square_size / 2, text=str(number))
+    CANVAS.create_text(column * square_size + square_size / 2, row * square_size + square_size / 2, text=str(text))
 
 
 def mark_open_states(list_of_squares):
-    """Marks a list of squares as 'open' in the matrix of states."""
+    """Marks a list of squares as 'open' in the matrix of states.
+
+    Parameters
+    ----------
+    list_of_squares : list
+        The list of squares that will be unblocked logically
+    """
 
     for row, column in list_of_squares:
         MATRIX_OF_STATES[row][column] = 1
 
 
 def clear_squares(list_of_squares):
-    """Clears a list of squares visually and in the matrix of states."""
+    """Clears a list of squares visually and in the matrix of states.
+
+    Parameters
+    ----------
+    list_of_squares : list
+        The list of squares that will be unblocked visually and logically
+    """
 
     mark_open_states(list_of_squares)
 
@@ -464,7 +676,19 @@ def clear_squares(list_of_squares):
 
 
 def get_adjacent_empty_terrain(coords):
-    """Returns terrain with zero bombs as neighbours, that is adjacent to the given square."""
+    """Returns terrain with zero bombs as neighbours, that is adjacent to the given square.
+
+    Parameters
+    ----------
+    coords : tuple
+        Tuple that represents the coordinates of the square on the board
+
+    Returns
+    ----------
+    list
+        A list of tuples representing coordinates of squares that are adjacent to zero bombs and
+        are linked to the given square
+    """
 
     q = [coords]
     index = 0
@@ -479,7 +703,20 @@ def get_adjacent_empty_terrain(coords):
 
 
 def get_adjacent_numbers(terrain):
-    """Returns the list of squares that represents the outline with numbers of an empty terrain."""
+    """Returns the list of squares that represents the outline with numbers of an empty terrain.
+
+    Parameters
+    ----------
+    terrain : list
+        A list of tuples representing coordinates of squares linked to each other and having
+        zero bombs adjacent to them
+
+    Returns
+    ----------
+    list
+        A list of tuples representing coordinates of squares that are adjacent to the terrain,
+        and to minimum one bomb, and that are not bombs
+    """
 
     adjacent_squares = []
     rows = CONSTANTS['number_of_rows']
@@ -505,7 +742,24 @@ def get_adjacent_numbers(terrain):
 
 
 def is_only_diagonally_linked(row, column, terrain):
-    """Checks if a given square is only diagonally linked to a terrain or not."""
+    """Checks if a given square is only diagonally linked to a terrain or not.
+
+    Parameters
+    ----------
+    row : int
+        The row of a square inside the board
+    column : int
+        The column of a square inside the board
+    terrain : list
+        A list of tuples representing coordinates of squares linked to each other and having
+        zero bombs adjacent to them
+
+    Returns
+    ----------
+    bool
+        A bool that represents if a given square is only diagonally linked to the
+        given terrain
+    """
 
     for i, j in [(-1, 0), (0, 1), (1, 0), (0, -1)]:
         coords = (row + i, column + j)
@@ -515,13 +769,33 @@ def is_only_diagonally_linked(row, column, terrain):
 
 
 def is_number(row, column):
-    """Checks if a given square as a number of adjacent bombs, that is grater that 0."""
+    """Checks if a given square as a number of adjacent bombs, that is grater that 0.
+
+    Parameters
+    ----------
+    row : int
+        The row of a square inside the board
+    column : int
+        The column of a square inside the board
+
+    Returns
+    ----------
+    bool
+        A bool that represents if the given square is adjacent to minimum one bomb
+        (True = is adjacent to minimum one bomb, False = is adjacent to zero bombs)
+    """
 
     return NUMBERS[row][column] in range(1, 9)
 
 
 def clear_terrain(square_coords):
-    """Clears the given square, the empty terrain adjacent to it, and the outline that contains numbers."""
+    """Clears the given square, the empty terrain adjacent to it, and the outline that contains numbers.
+
+    Parameters
+    ----------
+    square_coords : tuple
+        Tuple that represents the coordinates of the square on the board
+    """
 
     terrain_to_clear = [square_coords]
 
@@ -537,7 +811,13 @@ def clear_terrain(square_coords):
 
 
 def generate_bombs(square_coords):
-    """Generates bombs random inside the matrix, but not on the given square or its neighbours."""
+    """Generates bombs random inside the matrix, but not on the given square or its neighbours.
+
+    Parameters
+    ----------
+    square_coords : tuple
+        Tuple that represents the coordinates of the square on the board
+    """
 
     global BOMBS
     rows = CONSTANTS['number_of_rows']
@@ -557,7 +837,17 @@ def generate_bombs(square_coords):
 
 
 def init_values(rows, columns, number_of_bombs):
-    """Initializes board and window constants according to the given parameters."""
+    """Initializes board and window constants according to the given parameters.
+
+    Parameters
+    ----------
+    rows : int
+        The number of rows that the board will be updated to show
+    columns : int
+        The number of rows that the board will be updated to show
+    number_of_bombs : int
+        The number of bombs that the round will be updated to have
+    """
 
     global CONSTANTS
 
@@ -617,8 +907,22 @@ def update_board():
     paint_squares()
 
 
-def is_valid_number(string):
-    """Checks if the given string can be converted to a valid number of rows or columns for a functional board."""
+def is_valid_number_of_rows_or_columns(string):
+    """Checks if the given string can be converted to a valid number of rows or
+    columns for a functional board.
+
+    Parameters
+    ----------
+    string : str
+        A string given as input intended to represent the number of rows or columns
+
+    Return
+    ----------
+    bool
+        A bool that represents if the given string is a valid number of rows or
+        columns for a round
+        (True = valid, False = invalid)
+    """
 
     try:
         number = int(string)
@@ -631,7 +935,17 @@ def is_valid_number(string):
 
 
 def is_valid_number_of_bombs(number_of_bombs, rows, columns):
-    """Checks if the given number of bombs is valid according to the board sizes."""
+    """Checks if the given number of bombs is valid according to the board sizes.
+
+    Parameters
+    ----------
+    number_of_bombs : str
+        A string given as input intended to represent the number of bombs
+    rows : int
+        The number of rows that the board will be updated to show
+    columns : int
+        The number of rows that the board will be updated to show
+    """
 
     try:
         number = int(number_of_bombs)
@@ -644,13 +958,38 @@ def is_valid_number_of_bombs(number_of_bombs, rows, columns):
 
 
 def get_number(string):
-    """Returns the number from a validated string."""
+    """Returns the number from a validated string.
+
+    Parameters
+    ----------
+    string : str
+        A string representing a number, given to be converted to int
+
+    Return
+    ----------
+    int
+        An integer representing the value expressed in the string
+    """
 
     return int(string)
 
 
 def is_valid_time(time):
-    """Checks if the given time is a valid integer representing the number of seconds given to play a game."""
+    """Checks if the given time is a valid integer representing the number of
+    seconds given to play a game.
+
+    Parameters
+    ----------
+    time : str
+        A string given as input intended to represent the number of seconds
+        for the next round
+
+    Return
+    ----------
+    bool
+        A bool that represents if the given string expresses a valid number
+        of seconds
+    """
 
     try:
         number = int(time)
@@ -663,7 +1002,7 @@ def is_valid_time(time):
 
 
 def refresh_time_label():
-    """Refreshed the text inside the time label."""
+    """Refreshes the text inside the time label."""
 
     TIME_LABEL.config(text=str(TIME_LEFT))
 
@@ -674,7 +1013,6 @@ def show_time_over_popup():
     show_popup("TIME OVER! GAME OVER!")
 
 
-# noinspection PyTypeChecker
 def init_header():
     """Initializes the visual header with buttons, labels and entries."""
 
