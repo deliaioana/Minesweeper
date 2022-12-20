@@ -33,49 +33,37 @@ CONSTANTS = {'number_of_rows': 8, 'number_of_columns': 8, 'number_of_bombs': 10,
 
 
 def stop_thread():
-    """Stops the time thread."""
+    """Stops the timer thread."""
 
     global THREAD_STOP
-
-    print("thread running: ", THREAD_STOP.is_set())
     THREAD_STOP.set()
-
-    # try:
-    #     # TIMER_THREAD.join(timeout=0.05)
-    #     # if TIMER_THREAD.is_alive():
-    #     #     stop_thread()
-    #     #     return
-    #
-    #     print("succeeded")
-    # except Exception as e:
-    #     print("could not stop thread, ", e)
+    if TIMER_THREAD.is_alive():
+        TIMER_THREAD.join()
 
 
 def update_seconds():
     """Updates the second inside a label in a loop while the thread is still running."""
 
-    print("in update seconds")
     global TIME_LEFT, THREAD_STOP
     start_time = perf_counter()
-    THREAD_STOP.clear()
 
     while not THREAD_STOP.is_set():
-        print("inside while")
         current_time = perf_counter()
         difference = int(current_time - start_time)
         TIME_LEFT = TIME_TO_WAIT - difference
-        print("time left: ", TIME_LEFT)
         refresh_time_label()
-
-    while True:
-        ok = True
+        if TIME_LEFT <= 0:
+            show_time_over_popup()
+            break
+        t.sleep(1)
 
 
 def start_timer(time):
     """Starts a timer on a new thread."""
 
-    print("start timer")
     global TIMER_THREAD, TIME_TO_WAIT, THREAD_STOP
+
+    THREAD_STOP.clear()
 
     TIME_TO_WAIT = time
     TIMER_THREAD = Thread(target=update_seconds, daemon=True)
@@ -95,7 +83,6 @@ def update_custom_difficulty_and_restart(rows, columns, number_of_bombs):
         time = 0
         if is_valid_time(TIMER_ENTRY.get()):
             time = get_number(TIMER_ENTRY.get())
-            print("time: ", time)
         if time != 0:
             start_timer(time)
 
@@ -107,7 +94,6 @@ def update_custom_difficulty_and_restart(rows, columns, number_of_bombs):
 
             if is_valid_time(TIMER_ENTRY.get()):
                 time = get_number(TIMER_ENTRY.get())
-                print("time: ", time)
 
             if is_valid_number_of_bombs(number_of_bombs, row_number, column_number):
                 IN_GAME = False
@@ -260,8 +246,6 @@ def click_square(square_coords):
             show_all_bombs()
             show_winning_popup()
 
-    print_matrix(MATRIX_OF_STATES)
-
 
 def is_game_completed():
     """Checks if the game is won by counting blocked position."""
@@ -345,12 +329,6 @@ def start_round(square_coords):
     generate_bombs(square_coords)
     generate_numbers()
     clear_terrain(square_coords)
-
-
-def print_matrix(matrix):
-    print("------------------------------------------")
-    for row in matrix:
-        print(row)
 
 
 def generate_numbers():
@@ -576,8 +554,6 @@ def generate_bombs(square_coords):
 
     number_of_bombs = CONSTANTS['number_of_bombs']
     BOMBS = random.sample(list(set(all_possible_positions)), k=number_of_bombs)
-    print(all_possible_positions)
-    print(BOMBS)
 
 
 def init_values(rows, columns, number_of_bombs):
@@ -695,7 +671,6 @@ def refresh_time_label():
 def show_time_over_popup():
     """Calls the popup loader with the appropriate message after time has expired."""
 
-    print("time over")
     show_popup("TIME OVER! GAME OVER!")
 
 
