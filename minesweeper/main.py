@@ -1,7 +1,7 @@
 import time as t
 import random
 from tkinter import *
-from threading import Timer, Thread
+from threading import Timer, Thread, Event
 from time import perf_counter
 
 window = Tk()
@@ -12,7 +12,7 @@ timer_thread = Thread()
 time_left = 0
 time_to_wait = 0
 time_label = Label()
-thread_running = False
+thread_running = Event()
 remaining_flags_label = Label()
 
 bombs = []
@@ -33,11 +33,16 @@ size = {'easy': (300, 300, 0, 8, 10), 'medium': (400, 400, 1, 15, 40), 'hard': (
 
 
 def get_square_from_coords(x, y):
+    """Gets square coordinates in matrix from screen coordinates."""
+
     square_size = constants['square_size']
     return int(y/square_size), int(x/square_size)
 
 
 def click_on_canvas(event):
+    """Handles board left-clicks. They either start a new round or get handles in another function,
+    if that square is not flagged as a bomb."""
+
     x = canvas.canvasx(event.x)
     y = canvas.canvasy(event.y)
 
@@ -55,6 +60,8 @@ def click_on_canvas(event):
 
 
 def place_flag(event):
+    """Calls the function to place or remove flag on the computed square from the given coordinates."""
+
     x = canvas.canvasx(event.x)
     y = canvas.canvasy(event.y)
 
@@ -67,6 +74,8 @@ def place_flag(event):
 
 
 def place_question_mark(event):
+    """Calls the function to place or remove question mark on the computed square from the given coordinates."""
+
     x = canvas.canvasx(event.x)
     y = canvas.canvasy(event.y)
 
@@ -79,6 +88,8 @@ def place_question_mark(event):
 
 
 def place_or_erase_question_mark_on_square(square_coords):
+    """Places or removes an already placed question mark on a specific square."""
+
     row, column = square_coords
     global constants
 
@@ -92,6 +103,8 @@ def place_or_erase_question_mark_on_square(square_coords):
 
 
 def place_or_erase_flag_on_square(square_coords):
+    """Places or removes an already placed flag on a specific square."""
+
     row, column = square_coords
     global constants
 
@@ -105,16 +118,33 @@ def place_or_erase_flag_on_square(square_coords):
         erase_mark(row, column)
         matrix_states[row][column] = 0
 
-    refresh_label(remaining_flags_label)
+    refresh_flag_label()
 
 
-def refresh_label(label):
+def count_flags():
+    """Counts placed flags."""
+
+    count = 0
+    for row in matrix_states:
+        for state in row:
+            if state == 2:
+                count += 1
+    return count
+
+
+def refresh_flag_label():
+    """Refreshes flag label according to the current placed flags."""
+
+    global constants, remaining_flags_label
+    constants['number_of_placed_flags'] = count_flags()
     number_of_remaining_flags = constants['number_of_bombs'] - constants['number_of_placed_flags']
     flags = constants['flag']
-    label.config(text=flags + ": " + str(number_of_remaining_flags))
+    remaining_flags_label.config(text=flags + ": " + str(number_of_remaining_flags))
 
 
 def erase_mark(row, column):
+    """Erases any mark from a blocked square."""
+
     even_color = colors['blocked-square-even']
     odd_color = colors['blocked-square-odd']
 
@@ -122,6 +152,8 @@ def erase_mark(row, column):
 
 
 def show_all_bombs():
+    """Paints all bombs on top."""
+
     for bomb in bombs:
         row, column = bomb
         erase_mark(row, column)
@@ -130,6 +162,8 @@ def show_all_bombs():
 
 
 def click_square(square_coords):
+    """Handles square left-clicks, and game completion in case of winning or losing by clicking a bomb."""
+
     if square_coords in bombs:
         show_all_bombs()
         show_game_over_popup()
@@ -143,18 +177,21 @@ def click_square(square_coords):
 
 
 def is_game_completed():
+    """Checks if the game is won by counting blocked position."""
+
     number_of_unopened_squares = 0
     for i in range(len(matrix_states)):
         for j in range(len(matrix_states[0])):
             if matrix_states[i][j] in [0, 2]:
                 number_of_unopened_squares += 1
-    print("unopened squares: ", number_of_unopened_squares, ", bombs: ", len(bombs))
     if number_of_unopened_squares == len(bombs):
         return True
     return False
 
 
 def center_window(win, height, width):
+    """Centers a window."""
+
     screen_width = win.winfo_screenwidth()
     screen_height = win.winfo_screenheight()
 
@@ -165,10 +202,14 @@ def center_window(win, height, width):
 
 
 def show_winning_popup():
+    """Calls the popup loader with the appropriate message after winning the game."""
+
     show_popup("YOU WIN!")
 
 
 def show_popup(finishing_message):
+    """Displays a popup window showing that the game was finished and allowing the player to restart the game."""
+
     global game_finished, timer
     game_finished = True
     timer.cancel()
@@ -188,15 +229,21 @@ def show_popup(finishing_message):
 
 
 def show_game_over_popup():
+    """Calls the popup loader with the appropriate message after losing the game."""
+
     show_popup("GAME OVER!")
 
 
 def reset_and_close_window(win):
+    """Resets the current window and resets game values."""
+
     win.destroy()
     reset_game()
 
 
 def reset_game():
+    """Resets game values and updates the board."""
+
     global in_game, game_finished
     in_game = False
     game_finished = False
@@ -206,6 +253,8 @@ def reset_game():
 
 
 def start_round(square_coords):
+    """Initializes the round values, generates bombs and square numbers, clears terrain from clicked square."""
+
     init_matrix_state()
     generate_bombs(square_coords)
     generate_numbers()
@@ -219,6 +268,8 @@ def print_matrix(matrix):
 
 
 def generate_numbers():
+    """Computes the number of bombs neighbouring each square and stores them globally."""
+
     global numbers
     numbers = []
     rows = constants['number_of_rows']
@@ -236,6 +287,8 @@ def generate_numbers():
 
 
 def get_number_of_bombs_next_to_coords(row, column):
+    """Computes the number of bombs next to a given square."""
+
     number_of_bombs = 0
     for i in [-1, 0, 1]:
         for j in [-1, 0, 1]:
@@ -246,6 +299,8 @@ def get_number_of_bombs_next_to_coords(row, column):
 
 
 def init_matrix_state():
+    """Initializes all matrix square states to 'blocked'."""
+
     global matrix_states
     matrix_states = []
     rows = constants['number_of_rows']
@@ -259,6 +314,8 @@ def init_matrix_state():
 
 
 def is_inside_matrix(coords):
+    """Checks if coordinates are not out of matrix bounds."""
+
     rows = constants['number_of_rows']
     columns = constants['number_of_columns']
 
@@ -269,6 +326,8 @@ def is_inside_matrix(coords):
 
 
 def get_neighbours(coords):
+    """Returns neighbouring squares for a given square."""
+
     neighbours = []
     for i in [-1, 0, 1]:
         for j in [-1, 0, 1]:
@@ -279,6 +338,8 @@ def get_neighbours(coords):
 
 
 def get_new_empty_neighbours(visited, current_coords):
+    """Returns unvisited horizontally or vertically linked squares with zero bombs as neighbours to a given one."""
+
     empty_neighbours = []
     for i, j in [(-1, 0), (0, 1), (1, 0), (0, -1)]:
         neighbour_coords = current_coords[0] + i, current_coords[1] + j
@@ -291,6 +352,8 @@ def get_new_empty_neighbours(visited, current_coords):
 
 
 def paint_square(row, column, even_color, odd_color):
+    """Paints a square by matrix indexes with one of the two colors, resembling a chessboard."""
+
     square_size = constants['square_size']
     if (row + column) % 2 == 0:
         canvas.create_rectangle(column * square_size, row * square_size,
@@ -301,20 +364,28 @@ def paint_square(row, column, even_color, odd_color):
 
 
 def get_square_number(row, column):
+    """Returns the number of bomb neighbours for a given square."""
+
     return numbers[row][column]
 
 
 def paint_text_inside_square(number, row, column):
+    """Paints the given text inside a square given by index."""
+
     square_size = constants['square_size']
     canvas.create_text(column * square_size + square_size / 2, row * square_size + square_size / 2, text=str(number))
 
 
 def mark_open_states(list_of_squares):
+    """Marks a list of squares as 'open' in the matrix of states."""
+
     for row, column in list_of_squares:
         matrix_states[row][column] = 1
 
 
 def clear_squares(list_of_squares):
+    """Clears a list of squares visually and in the matrix of states."""
+
     mark_open_states(list_of_squares)
 
     even_color = colors['open-square-even']
@@ -329,6 +400,8 @@ def clear_squares(list_of_squares):
 
 
 def get_adjacent_empty_terrain(coords):
+    """Returns terrain with zero bombs as neighbours, that is adjacent to the given square."""
+
     q = [coords]
     index = 0
 
@@ -342,6 +415,8 @@ def get_adjacent_empty_terrain(coords):
 
 
 def get_adjacent_numbers(terrain):
+    """Returns the list of squares that represents the outline with numbers of an empty terrain."""
+
     adjacent_squares = []
     rows = constants['number_of_rows']
     columns = constants['number_of_columns']
@@ -366,6 +441,8 @@ def get_adjacent_numbers(terrain):
 
 
 def is_only_diagonally_linked(row, column, terrain):
+    """Checks if a given square is only diagonally linked to a terrain or not."""
+
     for i, j in [(-1, 0), (0, 1), (1, 0), (0, -1)]:
         coords = (row + i, column + j)
         if coords not in terrain:
@@ -374,10 +451,14 @@ def is_only_diagonally_linked(row, column, terrain):
 
 
 def is_number(row, column):
+    """Checks if a given square as a number of adjacent bombs, that is grater that 0."""
+
     return numbers[row][column] in range(1, 9)
 
 
 def clear_terrain(square_coords):
+    """Clears the given square, the empty terrain adjacent to it, and the outline that contains numbers."""
+
     terrain_to_clear = [square_coords]
 
     if numbers[square_coords[0]][square_coords[1]] == 0:
@@ -388,9 +469,12 @@ def clear_terrain(square_coords):
         terrain_to_clear.extend(adjacent_numbers)
 
     clear_squares(terrain_to_clear)
+    refresh_flag_label()
 
 
 def generate_bombs(square_coords):
+    """Generates bombs random inside the matrix, but not on the given square or its neighbours."""
+
     global bombs
     rows = constants['number_of_rows']
     columns = constants['number_of_columns']
@@ -409,6 +493,8 @@ def generate_bombs(square_coords):
 
 
 def init_values(rows, columns, number_of_bombs):
+    """Initializes board and window constants according to the given parameters."""
+
     global constants
 
     constants['number_of_rows'] = rows
@@ -425,10 +511,12 @@ def init_values(rows, columns, number_of_bombs):
     bg_color = colors['bg']
     window.configure(bg=bg_color)
 
-    refresh_label(remaining_flags_label)
+    refresh_flag_label()
 
 
 def init_board():
+    """Initializes board sizes according to the constants, and attaches buttons to the board."""
+
     canvas_width = constants['number_of_columns'] * constants['square_size']
     canvas_height = constants['number_of_rows'] * constants['square_size']
     canvas.config(width=canvas_width, height=canvas_height)
@@ -443,6 +531,8 @@ def init_board():
 
 
 def paint_squares():
+    """Paints all the squares as blocked with tho colors, in a chessboard pattern."""
+
     rows = constants['number_of_rows']
     columns = constants['number_of_columns']
     even_color = colors['blocked-square-even']
@@ -454,6 +544,8 @@ def paint_squares():
 
 
 def update_board():
+    """Resizes the board."""
+
     canvas_width = constants['number_of_columns'] * constants['square_size']
     canvas_height = constants['number_of_rows'] * constants['square_size']
     canvas.config(width=canvas_width, height=canvas_height)
@@ -462,6 +554,8 @@ def update_board():
 
 
 def is_valid_number(string):
+    """Checks if the given string can be converted to a valid number of rows or columns for a functional board."""
+
     try:
         number = int(string)
         if number in range(4, 30):
@@ -473,6 +567,8 @@ def is_valid_number(string):
 
 
 def is_valid_number_of_bombs(number_of_bombs, rows, columns):
+    """Checks if the given number of bombs is valid according to the board sizes."""
+
     try:
         number = int(number_of_bombs)
         if number in range(1, rows * columns):
@@ -484,15 +580,38 @@ def is_valid_number_of_bombs(number_of_bombs, rows, columns):
 
 
 def stop_thread():
+    """Stops the time thread."""
+
     global thread_running
-    thread_running = False
+
+    print("thread running: ", thread_running)
+    if thread_running:
+        thread_running = False
+        timer_thread.join()
 
 
 def get_number(string):
+    """Returns the number from a validated string."""
+
     return int(string)
 
 
+def is_valid_time(time):
+    """Checks if the given time is a valid integer representing the number of seconds given to play a game."""
+
+    try:
+        number = int(time)
+        if number in range(1000):
+            return True
+        return False
+
+    except ValueError:
+        return False
+
+
 def update_custom_difficulty_and_restart(rows, columns, number_of_bombs):
+    """Resets the game according and interrupts the current running game. Also starts the timer if required."""
+
     global in_game
 
     stop_thread()
@@ -505,7 +624,7 @@ def update_custom_difficulty_and_restart(rows, columns, number_of_bombs):
             row_number = get_number(rows)
             column_number = get_number(columns)
 
-            if is_valid_number(timer_entry.get()):
+            if is_valid_time(timer_entry.get()):
                 time = get_number(timer_entry.get())
                 print("time: ", time)
 
@@ -520,11 +639,14 @@ def update_custom_difficulty_and_restart(rows, columns, number_of_bombs):
 
 
 def refresh_time_label():
-    print("refresh time label")
+    """Refreshed the text inside the time label."""
+
     time_label.config(text=str(time_left))
 
 
 def update_seconds():
+    """Updates the second inside a label in a loop while the thread is still running."""
+
     global time_left
     start_time = perf_counter()
 
@@ -534,10 +656,13 @@ def update_seconds():
         current_time = perf_counter()
         difference = int(current_time - start_time)
         time_left = time_to_wait - difference
+        print("time left: ", time_left)
         refresh_time_label()
 
 
 def start_timer(time):
+    """Starts a timer on a new thread."""
+
     print("start timer")
     global timer, timer_thread, time_to_wait, thread_running
     thread_running = True
@@ -550,12 +675,16 @@ def start_timer(time):
 
 
 def show_time_over_popup():
+    """Calls the popup loader with the appropriate message after time has expired."""
+
     print("time over")
     show_popup("TIME OVER! GAME OVER!")
 
 
 # noinspection PyTypeChecker
 def init_header():
+    """Initializes the visual header with buttons, labels and entries."""
+
     global remaining_flags_label
 
     header_height = constants['header_height']
@@ -587,6 +716,8 @@ def init_header():
 
 
 def init_timer_section():
+    """Initializes the visual row that contains the timer."""
+
     section_height = constants['header_height']
     section = Canvas(window, width=window.winfo_screenwidth(), height=section_height)
     section.grid(row=1, column=0)
@@ -602,6 +733,8 @@ def init_timer_section():
 
 
 def start_game():
+    """Initializes the main game elements, both visual and logical."""
+
     init_values(constants['number_of_rows'], constants['number_of_columns'], constants['number_of_bombs'])
 
     init_header()
