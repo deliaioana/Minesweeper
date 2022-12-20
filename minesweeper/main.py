@@ -1,4 +1,6 @@
-"""This module starts a game of minesweeper with customizable rows, columns, bombs and time in a tkinter window."""
+"""This module starts a game of minesweeper with customizable rows, columns,
+bombs and time in a tkinter window.
+"""
 
 import time as t
 import random
@@ -78,8 +80,9 @@ def start_timer(time):
 
 
 def update_custom_difficulty_and_restart(rows, columns, number_of_bombs):
-    """Resets the game with 'rows' rows, 'columns' columns and 'number_of_bombs' bombs
-    and interrupts the current running game. Also starts the timer if required.
+    """Resets the game with 'rows' rows, 'columns' columns and
+    'number_of_bombs' bombs and interrupts the current running game.
+    Also starts the timer if required.
 
     Parameters
     ----------
@@ -139,8 +142,8 @@ def get_square_from_coords(x, y):
 
 
 def click_on_canvas(event):
-    """Handles board left-clicks. They either start a new round or get handles in another function,
-    if that square is not flagged as a bomb.
+    """Handles board left-clicks. They either start a new round or get handles
+    in another function, if that square is not flagged as a bomb.
 
     Parameters
     ----------
@@ -165,7 +168,8 @@ def click_on_canvas(event):
 
 
 def place_flag(event):
-    """Calls the function to place or remove flag on the computed square from the given coordinates.
+    """Calls the function to place or remove flag on the computed square from
+    the given coordinates.
 
     Parameters
     ----------
@@ -185,7 +189,8 @@ def place_flag(event):
 
 
 def place_question_mark(event):
-    """Calls the function to place or remove question mark on the computed square from the given coordinates.
+    """Calls the function to place or remove question mark on the computed
+    square from the given coordinates.
 
     Parameters
     ----------
@@ -256,7 +261,8 @@ def count_flags():
     Returns
     ----------
     int
-        An integer that represents the number of flags that are currently on the board
+        An integer that represents the number of flags that are currently on
+        the board
     """
 
     count = 0
@@ -305,7 +311,8 @@ def show_all_bombs():
 
 
 def click_square(square_coords):
-    """Handles square left-clicks, and game completion in case of winning or losing by clicking a bomb.
+    """Handles square left-clicks, and game completion in case of winning or
+    losing by clicking a bomb.
 
     Parameters
     ----------
@@ -329,7 +336,8 @@ def is_game_completed():
     Returns
     ----------
     bool
-        A bool representing the state of the game (True = complete, False = incomplete)
+        A bool representing the state of the game
+        (True = complete, False = incomplete)
     """
 
     number_of_unopened_squares = 0
@@ -365,13 +373,15 @@ def center_window(win, height, width):
 
 
 def show_winning_popup():
-    """Calls the popup loader with the appropriate message after winning the game."""
+    """Calls the popup loader with the appropriate message after winning the
+    game."""
 
     show_popup("YOU WIN!")
 
 
 def show_popup(finishing_message):
-    """Displays a popup window showing that the game was finished and allowing the player to restart the game.
+    """Displays a popup window showing that the game was finished and allowing
+    the player to restart the game.
 
     Parameters
     ----------
@@ -397,7 +407,8 @@ def show_popup(finishing_message):
 
 
 def show_game_over_popup():
-    """Calls the popup loader with the appropriate message after losing the game."""
+    """Calls the popup loader with the appropriate message after losing the
+    game."""
 
     show_popup("GAME OVER!")
 
@@ -442,7 +453,8 @@ def start_round(square_coords):
 
 
 def generate_numbers():
-    """Computes the number of bombs neighbouring each square and stores them globally."""
+    """Computes the number of bombs neighbouring each square and stores them
+    globally."""
 
     global NUMBERS
     NUMBERS = []
@@ -473,7 +485,8 @@ def get_number_of_bombs_next_to_coords(row, column):
     Returns
     ----------
     int
-        An integer that represents the number of bombs adjacent to the given square
+        An integer that represents the number of bombs adjacent to the given
+        square
     """
 
     number_of_bombs = 0
@@ -506,7 +519,8 @@ def is_inside_matrix(coords):
     Parameters
     ----------
     coords : tuple
-        Tuple that represents the coordinates a square that may be on the board
+        Tuple that represents the coordinates a square that may be on the
+        board
 
     Returns
     ----------
@@ -535,7 +549,8 @@ def get_neighbours(coords):
     Returns
     ----------
     list
-        A list of tuples representing coordinates of squares that are adjacent to the given square
+        A list of tuples representing coordinates of squares that are
+        adjacent to the given square
     """
 
     neighbours = []
@@ -548,7 +563,8 @@ def get_neighbours(coords):
 
 
 def get_new_empty_neighbours(visited, current_coords):
-    """Returns unvisited horizontally or vertically linked squares with zero bombs as neighbours to a given one.
+    """Returns unvisited horizontally or vertically linked squares with zero
+    bombs as neighbours to a given one.
 
     Parameters
     ----------
@@ -560,8 +576,9 @@ def get_new_empty_neighbours(visited, current_coords):
     Return
     ----------
     list
-        A list of tuples representing coordinates of squares that are adjacent to zero bombs,
-        are not found inside the visited list, and are also adjacent to the given square
+        A list of tuples representing coordinates of squares that are adjacent
+        to zero bombs, are not found inside the visited list, and are also
+        adjacent to the given square
     """
 
     empty_neighbours = []
@@ -576,7 +593,8 @@ def get_new_empty_neighbours(visited, current_coords):
 
 
 def paint_square(row, column, even_color, odd_color):
-    """Paints a square by matrix indexes with one of the two colors, resembling a chessboard.
+    """Paints a square by matrix indexes with one of the two colors,
+    resembling a chessboard.
 
     Parameters
     ----------
@@ -585,9 +603,11 @@ def paint_square(row, column, even_color, odd_color):
     column : int
         The column of a square inside the board
     even_color : str
-        A string representing the color for the squares with even sum of indexes
+        A string representing the color for the squares with even sum of
+        indexes
     odd_color : str
-        A string representing the color for the squares with odd sum of indexes
+        A string representing the color for the squares with odd sum of
+        indexes
     """
 
     square_size = CONSTANTS['square_size']
@@ -612,7 +632,8 @@ def get_square_number(row, column):
     Returns
     ---------
     int
-        An integer representing the number of bombs adjacent to the given square
+        An integer representing the number of bombs adjacent to the given
+        square
     """
 
     return NUMBERS[row][column]
@@ -633,7 +654,8 @@ def paint_text_inside_square(text, row, column):
     Returns
     ---------
     int
-        An integer representing the number of bombs adjacent to the given square
+        An integer representing the number of bombs adjacent to the given
+        square
     """
 
     square_size = CONSTANTS['square_size']
@@ -676,7 +698,8 @@ def clear_squares(list_of_squares):
 
 
 def get_adjacent_empty_terrain(coords):
-    """Returns terrain with zero bombs as neighbours, that is adjacent to the given square.
+    """Returns terrain with zero bombs as neighbours, that is adjacent to the
+    given square.
 
     Parameters
     ----------
@@ -686,8 +709,8 @@ def get_adjacent_empty_terrain(coords):
     Returns
     ----------
     list
-        A list of tuples representing coordinates of squares that are adjacent to zero bombs and
-        are linked to the given square
+        A list of tuples representing coordinates of squares that are adjacent
+        to zero bombs and are linked to the given square
     """
 
     q = [coords]
@@ -703,19 +726,20 @@ def get_adjacent_empty_terrain(coords):
 
 
 def get_adjacent_numbers(terrain):
-    """Returns the list of squares that represents the outline with numbers of an empty terrain.
+    """Returns the list of squares that represents the outline with numbers of
+    an empty terrain.
 
     Parameters
     ----------
     terrain : list
-        A list of tuples representing coordinates of squares linked to each other and having
-        zero bombs adjacent to them
+        A list of tuples representing coordinates of squares linked to each
+        other and having zero bombs adjacent to them
 
     Returns
     ----------
     list
-        A list of tuples representing coordinates of squares that are adjacent to the terrain,
-        and to minimum one bomb, and that are not bombs
+        A list of tuples representing coordinates of squares that are adjacent
+        to the terrain, and to minimum one bomb, and that are not bombs
     """
 
     adjacent_squares = []
@@ -751,14 +775,14 @@ def is_only_diagonally_linked(row, column, terrain):
     column : int
         The column of a square inside the board
     terrain : list
-        A list of tuples representing coordinates of squares linked to each other and having
-        zero bombs adjacent to them
+        A list of tuples representing coordinates of squares linked to each
+        other and having zero bombs adjacent to them
 
     Returns
     ----------
     bool
-        A bool that represents if a given square is only diagonally linked to the
-        given terrain
+        A bool that represents if a given square is only diagonally linked to
+        the given terrain
     """
 
     for i, j in [(-1, 0), (0, 1), (1, 0), (0, -1)]:
@@ -769,7 +793,8 @@ def is_only_diagonally_linked(row, column, terrain):
 
 
 def is_number(row, column):
-    """Checks if a given square as a number of adjacent bombs, that is grater that 0.
+    """Checks if a given square as a number of adjacent bombs, that is grater
+    that 0.
 
     Parameters
     ----------
@@ -781,7 +806,8 @@ def is_number(row, column):
     Returns
     ----------
     bool
-        A bool that represents if the given square is adjacent to minimum one bomb
+        A bool that represents if the given square is adjacent to minimum one
+        bomb
         (True = is adjacent to minimum one bomb, False = is adjacent to zero bombs)
     """
 
@@ -789,7 +815,8 @@ def is_number(row, column):
 
 
 def clear_terrain(square_coords):
-    """Clears the given square, the empty terrain adjacent to it, and the outline that contains numbers.
+    """Clears the given square, the empty terrain adjacent to it, and the
+    outline that contains numbers.
 
     Parameters
     ----------
@@ -811,7 +838,8 @@ def clear_terrain(square_coords):
 
 
 def generate_bombs(square_coords):
-    """Generates bombs random inside the matrix, but not on the given square or its neighbours.
+    """Generates bombs random inside the matrix, but not on the given square
+    or its neighbours.
 
     Parameters
     ----------
@@ -837,7 +865,8 @@ def generate_bombs(square_coords):
 
 
 def init_values(rows, columns, number_of_bombs):
-    """Initializes board and window constants according to the given parameters.
+    """Initializes board and window constants according to the given
+    parameters.
 
     Parameters
     ----------
@@ -869,7 +898,8 @@ def init_values(rows, columns, number_of_bombs):
 
 
 def init_board():
-    """Initializes board sizes according to the constants, and attaches buttons to the board."""
+    """Initializes board sizes according to the constants, and attaches
+    buttons to the board."""
 
     canvas_width = CONSTANTS['number_of_columns'] * CONSTANTS['square_size']
     canvas_height = CONSTANTS['number_of_rows'] * CONSTANTS['square_size']
@@ -885,7 +915,8 @@ def init_board():
 
 
 def paint_squares():
-    """Paints all the squares as blocked with tho colors, in a chessboard pattern."""
+    """Paints all the squares as blocked with tho colors, in a chessboard
+    pattern."""
 
     rows = CONSTANTS['number_of_rows']
     columns = CONSTANTS['number_of_columns']
@@ -908,19 +939,20 @@ def update_board():
 
 
 def is_valid_number_of_rows_or_columns(string):
-    """Checks if the given string can be converted to a valid number of rows or
-    columns for a functional board.
+    """Checks if the given string can be converted to a valid number of rows
+    or columns for a functional board.
 
     Parameters
     ----------
     string : str
-        A string given as input intended to represent the number of rows or columns
+        A string given as input intended to represent the number of rows or
+        columns
 
     Return
     ----------
     bool
-        A bool that represents if the given string is a valid number of rows or
-        columns for a round
+        A bool that represents if the given string is a valid number of rows
+        or columns for a round
         (True = valid, False = invalid)
     """
 
@@ -935,7 +967,8 @@ def is_valid_number_of_rows_or_columns(string):
 
 
 def is_valid_number_of_bombs(number_of_bombs, rows, columns):
-    """Checks if the given number of bombs is valid according to the board sizes.
+    """Checks if the given number of bombs is valid according to the board
+    sizes.
 
     Parameters
     ----------
@@ -1008,7 +1041,8 @@ def refresh_time_label():
 
 
 def show_time_over_popup():
-    """Calls the popup loader with the appropriate message after time has expired."""
+    """Calls the popup loader with the appropriate message after time has
+    expired."""
 
     show_popup("TIME OVER! GAME OVER!")
 
